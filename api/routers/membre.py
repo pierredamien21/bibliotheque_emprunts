@@ -22,18 +22,21 @@ def get_one(id_membre: int, db: Session = Depends(get_db), current_user: Bibliot
     return obj
 
 
-@router.post("/", response_model=MembreOut)
-def create(data: MembreCreate, db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
-    data_dict = data.model_dump()
-    password = data_dict.pop("password")
-    
-    obj = Membre(**data_dict)
-    obj.mot_de_passe_hash = hash_password(password)
-    
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
-    return obj
+    from sqlalchemy.exc import IntegrityError
+    try:
+        obj = Membre(**data_dict)
+        obj.mot_de_passe_hash = hash_password(password)
+        
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Un membre avec cet email, ce numéro de carte ou ce login existe déjà."
+        )
 
 
 @router.put("/{id_membre}", response_model=MembreOut)

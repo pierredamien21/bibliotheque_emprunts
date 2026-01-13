@@ -86,6 +86,7 @@ CREATE TABLE livre (
     annee_publication INT CHECK (annee_publication >= 0),
     date_ajout_catalogue DATE NOT NULL DEFAULT CURRENT_DATE,
     id_categorie INT NOT NULL,
+    image_url VARCHAR(500),
     CONSTRAINT fk_livre_categorie
         FOREIGN KEY (id_categorie)
         REFERENCES categorie(id_categorie)
@@ -254,6 +255,22 @@ CREATE TABLE notification (
     lu BOOLEAN NOT NULL DEFAULT FALSE,
     id_membre INT NOT NULL,
     CONSTRAINT fk_notification_membre FOREIGN KEY (id_membre) REFERENCES membre(id_membre) ON DELETE CASCADE
+);
+
+-- =========================
+-- TABLE: MESSAGE (V3)
+-- =========================
+CREATE TABLE message (
+    id_message SERIAL PRIMARY KEY,
+    id_membre INT NOT NULL,
+    id_bibliotecaire INT,
+    contenu TEXT NOT NULL,
+    reponse TEXT,
+    date_envoi TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_reponse TIMESTAMP,
+    statut VARCHAR(20) NOT NULL DEFAULT 'Envoye',
+    CONSTRAINT fk_message_membre FOREIGN KEY (id_membre) REFERENCES membre(id_membre) ON DELETE CASCADE,
+    CONSTRAINT fk_message_bibliothecaire FOREIGN KEY (id_bibliotecaire) REFERENCES bibliothecaire(id_bibliotecaire)
 );
 
 COMMIT;
