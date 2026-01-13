@@ -114,3 +114,58 @@ def login_member(form_data: OAuth2PasswordRequestForm = Depends(), db: Session =
         "prenom": member.prenom,
         "id_membre": member.id_membre
     }
+@router.post("/login/unified")
+def login_unified(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """
+    Unified login for both Staff and Members.
+    Tries staff first, then member.
+    """
+    # 1. Try Staff
+    user = db.query(Bibliothecaire).filter(Bibliothecaire.login == form_data.username).first()
+    if user and verify_password(form_data.password, user.mot_de_passe_hash):
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.login, "role": user.role},
+            expires_delta=access_token_expires
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "role": user.role,
+            "nom": user.nom,
+            "prenom": user.prenom
+        }
+
+    # 2. Try Member
+    member = db.query(Membre).filter(
+        (Membre.email == form_data.username) | 
+        (Membre.numero_carte == form_data.username) | 
+        (Membre.login == form_data.username)
+    ).first()
+    
+    if member and member.mot_de_passe_hash and verify_password(form_data.password, member.mot_de_passe_hash):
+        if member.statut_compte != "Actif":
+            raise HTTPException(403, "Account is suspended")
+            
+        member.derniere_connexion = date.today()
+        db.commit()
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": member.email, "role": "Membre", "id": member.id_membre},
+            expires_delta=access_token_expires
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "role": "Membre",
+            "nom": member.nom,
+            "prenom": member.prenom,
+            "id_membre": member.id_membre
+        }
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect identifiers or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
