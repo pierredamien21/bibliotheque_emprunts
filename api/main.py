@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 # Routers
 from routers.auth import router as auth_router
@@ -18,6 +20,7 @@ from routers.stats import router as stats_router
 from routers.notification import router as notification_router
 from routers.avis import router as avis_router
 from routers.favoris import router as favoris_router
+from routers.upload import router as upload_router
 
 app = FastAPI(
     title="API Gestion Bibliothèque",
@@ -33,6 +36,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Servir les fichiers statiques (images)
+static_path = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(static_path):
+    os.makedirs(static_path)
+app.mount("/static", StaticFiles(directory=static_path), name="static")
 
 # =========================
 # ROUTERS
@@ -53,6 +62,7 @@ app.include_router(stats_router)
 app.include_router(notification_router)
 app.include_router(avis_router)
 app.include_router(favoris_router)
+app.include_router(upload_router)
 
 # =========================
 # ROOT

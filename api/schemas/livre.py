@@ -11,6 +11,7 @@ class LivreBase(BaseModel):
     langue: Optional[str] = Field(None, description="Langue du livre", json_schema_extra={"example": "Français"})
     annee_publication: Optional[int] = Field(None, description="Année de publication", json_schema_extra={"example": 1862})
     id_categorie: int = Field(..., description="ID de la catégorie associée")
+    image_url: Optional[str] = Field(None, description="URL de la couverture du livre", json_schema_extra={"example": "https://images.com/book.jpg"})
 
 
 class LivreCreate(LivreBase):

@@ -47,6 +47,9 @@ Utilisez l'endpoint `GET /auth/me` pour voir instantanément vos informations et
 
 ## 🛡️ 4. Fonctionnalités pour le PERSONNEL (Staff/Admin)
 
+### 🖼️ Gestion des Images
+- **Upload Couverture** : `POST /upload/livre/{id_livre}`. Permet d'uploader une image (JPG, PNG) pour la couverture du livre. L'image sera stockée localement sur le serveur.
+
 ### 📦 Gestion des Flux
 - **Emprunts** : `POST /emprunts/`. Enregistrez un prêt au comptoir.
 - **Retours & Amendes** : `PUT /emprunts/{id}/retour`. Le système calcule **automatiquement** l'amende de retard (100 FCFA / jour) et crée une sanction si nécessaire.

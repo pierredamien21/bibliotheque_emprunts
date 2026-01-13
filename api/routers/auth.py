@@ -35,38 +35,36 @@ def get_me(current_user=Depends(get_current_user)):
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    try:
-        # Find user by login
-        user = db.query(Bibliothecaire).filter(Bibliothecaire.login == form_data.username).first()
-        
-        if not user or not verify_password(form_data.password, user.mot_de_passe_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.login, "role": user.role},
-            expires_delta=access_token_expires
+    """
+    Authenticate a bibliothecaire and return a JWT access token.
+    
+    - **username**: Login of the bibliothecaire
+    - **password**: Plain text password
+    """
+    # Find user by login
+    user = db.query(Bibliothecaire).filter(Bibliothecaire.login == form_data.username).first()
+    
+    if not user or not verify_password(form_data.password, user.mot_de_passe_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "role": user.role,
-            "nom": user.nom,
-            "prenom": user.prenom
-        }
-    except Exception as e:
-        import traceback
-        return {
-            "error_type": type(e).__name__,
-            "error_detail": str(e),
-            "traceback": traceback.format_exc()
-        }
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.login, "role": user.role},
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user.role,
+        "nom": user.nom,
+        "prenom": user.prenom
+    }
 
 
 @router.post("/login/member")

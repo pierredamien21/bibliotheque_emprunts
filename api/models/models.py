@@ -96,6 +96,7 @@ class Livre(Base):
     date_ajout_catalogue = Column(Date, default=date.today)
 
     id_categorie = Column(Integer, ForeignKey("categorie.id_categorie"), nullable=False)
+    image_url = Column(String(500)) # URL vers la couverture du livre
 
 
 # =========================
