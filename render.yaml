@@ -5,7 +5,7 @@ services:
     region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python api/init_db.py && python api/seed_types.py && python api/seed_admin.py && uvicorn api.main:app --host 0.0.0.0 --port $PORT
     # See ENV_CONFIG.md for detailed environment variables documentation
     envVars:
       - key: DATABASE_URL
