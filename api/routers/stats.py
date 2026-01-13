@@ -24,7 +24,7 @@ def get_stats(db: Session = Depends(get_db), current_user: Bibliothecaire = Depe
         func.count(Emprunt.id_emprunt).label("total")
     ).join(Exemplaire, Livre.id_livre == Exemplaire.id_livre)\
      .join(Emprunt, Exemplaire.id_exemplaire == Emprunt.id_exemplaire)\
-     .group_by(Livre.id_livre)\
+     .group_by(Livre.id_livre, Livre.titre)\
      .order_by(func.count(Emprunt.id_emprunt).desc())\
      .limit(5).all()
 
@@ -33,7 +33,7 @@ def get_stats(db: Session = Depends(get_db), current_user: Bibliothecaire = Depe
         Categorie.nom_categorie,
         func.count(Livre.id_livre).label("nb_livres")
     ).join(Livre, Categorie.id_categorie == Livre.id_categorie)\
-     .group_by(Categorie.id_categorie).all()
+     .group_by(Categorie.id_categorie, Categorie.nom_categorie).all()
 
     return {
         "global": {

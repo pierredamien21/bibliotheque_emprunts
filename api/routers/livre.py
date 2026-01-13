@@ -60,56 +60,69 @@ def get_recommendations(db: Session = Depends(get_db), current_user = Depends(ge
     """
     if not isinstance(current_user, Membre):
         # Staff : Retourne simplement les livres les plus récents
-        return db.query(Livre).order_by(desc(Livre.date_ajout_catalogue)).limit(5).all()
+        recommendations = db.query(Livre).order_by(desc(Livre.date_ajout_catalogue)).limit(5).all()
+    else:
+        # 1. Trouver les catégories préférées (Top 3) via les emprunts
+        pref_categories = db.query(Livre.id_categorie, func.count(Emprunt.id_emprunt).label("cnt"))\
+            .join(Exemplaire, Exemplaire.id_livre == Livre.id_livre)\
+            .join(Emprunt, Emprunt.id_exemplaire == Exemplaire.id_exemplaire)\
+            .filter(Emprunt.id_membre == current_user.id_membre)\
+            .group_by(Livre.id_categorie)\
+            .order_by(desc("cnt"))\
+            .limit(3).all()
+        
+        category_ids = [c[0] for c in pref_categories]
 
-    # 1. Trouver les catégories préférées (Top 3) via les emprunts
-    pref_categories = db.query(Livre.id_categorie, func.count(Emprunt.id_emprunt).label("cnt"))\
-        .join(Exemplaire, Exemplaire.id_livre == Livre.id_livre)\
-        .join(Emprunt, Emprunt.id_exemplaire == Exemplaire.id_exemplaire)\
-        .filter(Emprunt.id_membre == current_user.id_membre)\
-        .group_by(Livre.id_categorie)\
-        .order_by(desc("cnt"))\
-        .limit(3).all()
-    
-    category_ids = [c[0] for c in pref_categories]
+        # 2. Identifier les livres déjà empruntés pour les exclure
+        empruntes_ids = db.query(Emprunt.id_exemplaire)\
+            .filter(Emprunt.id_membre == current_user.id_membre).all()
+        exclude_ids = [e[0] for e in empruntes_ids]
 
-    # 2. Identifier les livres déjà empruntés pour les exclure
-    empruntes_ids = db.query(Emprunt.id_exemplaire)\
-        .filter(Emprunt.id_membre == current_user.id_membre).all()
-    exclude_ids = [e[0] for e in empruntes_ids]
+        # 3. Rechercher des recommandations
+        recommendations = []
+        
+        if category_ids:
+            # Suggestions dans ses catégories préférées
+            recommendations = db.query(Livre)\
+                .filter(Livre.id_categorie.in_(category_ids))\
+                .filter(~Livre.id_livre.in_(exclude_ids))\
+                .order_by(func.random())\
+                .limit(5).all()
 
-    # 3. Rechercher des recommandations
-    recommendations = []
-    
-    if category_ids:
-        # Suggestions dans ses catégories préférées
-        recommendations = db.query(Livre)\
-            .filter(Livre.id_categorie.in_(category_ids))\
-            .filter(~Livre.id_livre.in_(exclude_ids))\
-            .order_by(func.random())\
-            .limit(5).all()
+        # 4. Si pas assez de recommandations, ajouter les livres les mieux notés
+        if len(recommendations) < 5:
+            sub_exclude = exclude_ids + [r.id_livre for r in recommendations]
+            top_rated = db.query(Livre)\
+                .join(Avis, Avis.id_livre == Livre.id_livre)\
+                .filter(~Livre.id_livre.in_(sub_exclude))\
+                .group_by(Livre.id_livre)\
+                .order_by(desc(func.avg(Avis.note)))\
+                .limit(5 - len(recommendations)).all()
+            recommendations.extend(top_rated)
 
-    # 4. Si pas assez de recommandations, ajouter les livres les mieux notés
-    if len(recommendations) < 5:
-        sub_exclude = exclude_ids + [r.id_livre for r in recommendations]
-        top_rated = db.query(Livre)\
-            .join(Avis, Avis.id_livre == Livre.id_livre)\
-            .filter(~Livre.id_livre.in_(sub_exclude))\
-            .group_by(Livre.id_livre)\
-            .order_by(desc(func.avg(Avis.note)))\
-            .limit(5 - len(recommendations)).all()
-        recommendations.extend(top_rated)
+        # 5. Si toujours pas assez, prendre les plus récents
+        if len(recommendations) < 5:
+            sub_exclude_2 = exclude_ids + [r.id_livre for r in recommendations]
+            recent = db.query(Livre)\
+                .filter(~Livre.id_livre.in_(sub_exclude_2))\
+                .order_by(desc(Livre.date_ajout_catalogue))\
+                .limit(5 - len(recommendations)).all()
+            recommendations.extend(recent)
 
-    # 5. Si toujours pas assez, prendre les plus récents
-    if len(recommendations) < 5:
-        sub_exclude_2 = exclude_ids + [r.id_livre for r in recommendations]
-        recent = db.query(Livre)\
-            .filter(~Livre.id_livre.in_(sub_exclude_2))\
-            .order_by(desc(Livre.date_ajout_catalogue))\
-            .limit(5 - len(recommendations)).all()
-        recommendations.extend(recent)
-
-    return recommendations
+    # 6. Formater avec nb_disponible pour Pydantic
+    result = []
+    for livre in recommendations:
+        nb_dispo = db.query(Exemplaire).filter(
+            Exemplaire.id_livre == livre.id_livre,
+            Exemplaire.etat == "Disponible",
+            Exemplaire.statut_logique == "Actif"
+        ).count()
+        
+        livre_dict = {c.name: getattr(livre, c.name) for c in livre.__table__.columns}
+        livre_dict["nb_disponible"] = nb_dispo
+        result.append(livre_dict)
+        
+    return result
 
 
 @router.get("/{id_livre}", response_model=LivreOut)

@@ -54,8 +54,16 @@ from security import create_access_token
 from models.models import Bibliothecaire
 
 @pytest.fixture(scope="function")
-def authorized_client(client, db_session):
-    """Create a TestClient with a valid Bearer token."""
+def authorized_client(db_session):
+    """Create a TestClient with a valid Bearer token for Staff."""
+    # Ensure db override
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    app.dependency_overrides[get_db] = override_get_db
+    
     # 1. Create a user in the DB
     user = Bibliothecaire(
         matricule="TEST-ADMIN",
@@ -70,20 +78,28 @@ def authorized_client(client, db_session):
     db_session.commit()
     db_session.refresh(user)
 
-    # 2. PROPERLY generate token using the user's login
+    # 2. PROPERLY generate token
     token = create_access_token(data={"sub": user.login, "role": user.role})
     
-    # 3. Add header
-    client.headers = {
-        **client.headers,
-        "Authorization": f"Bearer {token}"
-    }
-    return client
+    # 3. Create client
+    with TestClient(app) as c:
+        c.headers = {"Authorization": f"Bearer {token}"}
+        yield c
+    
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="function")
-def member_client(client, db_session):
+def member_client(db_session):
     """Create a TestClient authenticated as a regular member."""
+    # Ensure db override
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+    app.dependency_overrides[get_db] = override_get_db
+
     from models.models import Membre, TypeMembre
     from security import hash_password
 
@@ -109,12 +125,12 @@ def member_client(client, db_session):
     db_session.commit()
     db_session.refresh(member)
 
-    # 3. Generate token for the member
+    # 3. Generate token
     token = create_access_token(data={"sub": member.email, "role": "Membre", "id": member.id_membre})
     
-    # 4. Add header
-    client.headers = {
-        **client.headers,
-        "Authorization": f"Bearer {token}"
-    }
-    return client
+    # 4. Create separate client
+    with TestClient(app) as c:
+        c.headers = {"Authorization": f"Bearer {token}"}
+        yield c
+    
+    app.dependency_overrides.clear()

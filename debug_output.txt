@@ -1,0 +1,37 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/sly/Desktop/emprunt_bibliotheque/bibliotheque_emprunts
+plugins: anyio-4.12.0
+collected 4 items
+
+api/tests/test_new_features.py ..DEBUG: get_current_staff check. User type: <class 'models.models.Bibliothecaire'>
+DEBUG: get_current_staff check. User type: <class 'models.models.Bibliothecaire'>
+F.
+
+=================================== FAILURES ===================================
+______________________________ test_stats_access _______________________________
+
+authorized_client = <starlette.testclient.TestClient object at 0x766a3db786b0>
+member_client = <starlette.testclient.TestClient object at 0x766a3db786b0>
+
+    def test_stats_access(authorized_client, member_client):
+        # Staff can access
+        r = authorized_client.get("/stats/")
+        assert r.status_code == 200
+    
+        # Member cannot access
+        r = member_client.get("/stats/")
+>       assert r.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+api/tests/test_new_features.py:41: AssertionError
+=============================== warnings summary ===============================
+api/schemas/v3_schemas.py:11
+  /home/sly/Desktop/emprunt_bibliotheque/bibliotheque_emprunts/api/schemas/v3_schemas.py:11: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class MessageOut(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED api/tests/test_new_features.py::test_stats_access - assert 200 == 403
+==================== 1 failed, 3 passed, 1 warning in 2.01s ====================

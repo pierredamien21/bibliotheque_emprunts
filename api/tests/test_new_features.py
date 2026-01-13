@@ -10,7 +10,16 @@ def test_auth_me(authorized_client):
 
 def test_member_reservation_self(member_client, db_session):
     # Setup: need a book
-    livre = db_session.query(Livre).first()
+    from models.models import Categorie
+    cat = Categorie(nom_categorie="TestCat", description="Desc")
+    db_session.add(cat)
+    db_session.commit()
+    
+    livre = Livre(titre="Test Book", id_categorie=cat.id_categorie, isbn="12345")
+    db_session.add(livre)
+    db_session.commit()
+    
+    # livre = db_session.query(Livre).first()
     res_data = {
         "id_livre": livre.id_livre,
         "id_membre": 999, # Should be ignored and forced to current user
