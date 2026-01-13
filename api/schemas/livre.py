@@ -17,8 +17,11 @@ class LivreCreate(LivreBase):
     pass
 
 
+from typing import Optional
+
 class LivreOut(LivreBase):
     id_livre: int = Field(..., description="Identifiant unique du livre")
     date_ajout_catalogue: date = Field(..., description="Date d'ajout au catalogue")
+    nb_disponible: Optional[int] = Field(0, description="Nombre d'exemplaires disponibles")
 
     model_config = ConfigDict(from_attributes=True)

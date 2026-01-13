@@ -14,6 +14,10 @@ from routers.exemplaire import router as exemplaire_router
 from routers.emprunt import router as emprunt_router
 from routers.reservation import router as reservation_router
 from routers.sanction import router as sanction_router
+from routers.stats import router as stats_router
+from routers.notification import router as notification_router
+from routers.avis import router as avis_router
+from routers.favoris import router as favoris_router
 
 app = FastAPI(
     title="API Gestion Bibliothèque",
@@ -45,6 +49,10 @@ app.include_router(exemplaire_router)
 app.include_router(emprunt_router)
 app.include_router(reservation_router)
 app.include_router(sanction_router)
+app.include_router(stats_router)
+app.include_router(notification_router)
+app.include_router(avis_router)
+app.include_router(favoris_router)
 
 # =========================
 # ROOT

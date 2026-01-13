@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import DBAPIError
 from database import get_db
-from models.models import Emprunt, Membre, TypeMembre, Exemplaire
+from models.models import Emprunt, Membre, TypeMembre, Exemplaire, Sanction, Reservation
 from schemas.emprunt import EmpruntCreate, EmpruntOut
 from datetime import date, timedelta
 from security import get_current_user, get_current_staff
@@ -77,17 +77,74 @@ def retour(id_emprunt: int, db: Session = Depends(get_db), current_user: Bibliot
     if emp.statut == "Termine":
         raise HTTPException(400, "Cet emprunt est déjà terminé")
 
-    # 1. Mettre à jour l'emprunt
-    emp.statut = "Termine"
-    emp.date_retour_effective = date.today()
+    today = date.today()
     
-    # 2. Libérer l'exemplaire
+    # 1. Calcul des amendes si retard
+    sanction_msg = ""
+    if today > emp.date_retour_prevue:
+        retard_jours = (today - emp.date_retour_prevue).days
+        montant = retard_jours * 100 # 100 FCFA par jour
+        
+        nueva_sanction = Sanction(
+            type_sanction="Retard",
+            montant=montant,
+            statut="Non payee",
+            id_membre=emp.id_membre,
+            id_emprunt=emp.id_emprunt,
+            id_bibliotecaire=current_user.id_bibliotecaire
+        )
+        db.add(nueva_sanction)
+        sanction_msg = f" | Sanction générée : {montant} FCFA ({retard_jours} jours de retard)"
+
+    # 2. Mettre à jour l'emprunt
+    emp.statut = "Termine"
+    emp.date_retour_effective = today
+    
+    # 3. Libérer l'exemplaire
     exemplaire = db.get(Exemplaire, emp.id_exemplaire)
     if exemplaire:
         exemplaire.etat = "Disponible"
 
     db.commit()
-    return {"message": "Retour effectué"}
+    return {"message": f"Retour effectué{sanction_msg}"}
+
+
+@router.patch("/{id_emprunt}/prolonger")
+def prolonger(id_emprunt: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    emp = db.get(Emprunt, id_emprunt)
+    if not emp:
+        raise HTTPException(404, "Emprunt introuvable")
+    
+    # Restriction : Seul le membre concerné ou le staff peut prolonger
+    if isinstance(current_user, Membre) and emp.id_membre != current_user.id_membre:
+        raise HTTPException(403, "Vous ne pouvez prolonger que vos propres emprunts")
+    
+    if emp.statut != "En cours":
+        raise HTTPException(400, f"Prolongation impossible : l'emprunt est en statut '{emp.statut}'")
+    
+    if emp.renouvellement_count >= 1:
+        raise HTTPException(400, "Limite de prolongation atteinte (max 1)")
+    
+    # Vérifier si le livre est réservé
+    # On récupère le id_livre via l'exemplaire
+    exemplaire = db.get(Exemplaire, emp.id_exemplaire)
+    res_active = db.query(Reservation).filter(
+        Reservation.id_livre == exemplaire.id_livre,
+        Reservation.statut == "En attente"
+    ).first()
+    
+    if res_active:
+        raise HTTPException(400, "Prolongation impossible : ce livre est réservé par un autre membre")
+
+    # Prolongation de 7 jours
+    emp.date_retour_prevue = emp.date_retour_prevue + timedelta(days=7)
+    emp.renouvellement_count += 1
+    
+    db.commit()
+    return {
+        "message": "Emprunt prolongé de 7 jours", 
+        "nouvelle_date_retour": emp.date_retour_prevue
+    }
 
 
 @router.get("/{id_emprunt}", response_model=EmpruntOut)

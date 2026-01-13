@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.models import Reservation
 from schemas.reservation import ReservationCreate, ReservationOut
-from security import get_current_staff
-from models.models import Bibliothecaire
+from security import get_current_staff, get_current_user
+from models.models import Bibliothecaire, Membre
 
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
@@ -15,8 +15,24 @@ def get_all(db: Session = Depends(get_db), current_user: Bibliothecaire = Depend
 
 
 @router.post("/", response_model=ReservationOut)
-def create(data: ReservationCreate, db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
-    obj = Reservation(**data.model_dump())
+def create(data: ReservationCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    from fastapi import HTTPException
+    data_dict = data.model_dump()
+    
+    # Logic for Members: forced to their own id, and no librarian assigned yet
+    if isinstance(current_user, Membre):
+        data_dict["id_membre"] = current_user.id_membre
+        data_dict["id_bibliotecaire"] = None
+    
+    # If it's staff, they must specify a member id (since it's optional in schema now)
+    elif isinstance(current_user, Bibliothecaire):
+        if data_dict.get("id_membre") is None:
+            raise HTTPException(400, "Le champ 'id_membre' est obligatoire pour le staff")
+            
+        if data_dict.get("id_bibliotecaire") is None:
+            data_dict["id_bibliotecaire"] = current_user.id_bibliotecaire
+
+    obj = Reservation(**data_dict)
     db.add(obj)
     db.commit()
     db.refresh(obj)

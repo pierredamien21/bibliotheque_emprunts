@@ -1,87 +1,74 @@
-# Documentation de l'API - Système de Gestion de Bibliothèque
+# 📚 Documentation API - Système de Gestion de Bibliothèque (V2)
 
-Cette documentation détaille le fonctionnement de l'API, les rôles des utilisateurs, et les processus d'authentification.
-
-## 1. Rôles et Permissions
-
-L'API utilise un système de Contrôle d'Accès Basé sur les Rôles (RBAC) avec trois niveaux :
-
-### 🔐 Administrateur (Admin)
-*   **Identifiant par défaut** : `admin` / `admin123`
-*   **Pouvoirs** : Accès total à tout le système.
-*   **Exclusivité** : C'est le seul rôle autorisé à gérer les comptes du personnel (les Bibliothécaires).
-*   **Router spécifique** : `routers/bibliotecaire.py`
-
-### 🛡️ Agent de Bibliothèque (Agent)
-*   **Rôle** : Gestion quotidienne de la bibliothèque.
-*   **Pouvoirs** : 
-    *   Gestion des livres, auteurs, catégories et exemplaires.
-    *   **Inscrire les membres**.
-    *   Enregistrer les emprunts et les retours.
-    *   Gérer les réservations et les sanctions.
-*   **Router spécifique** : Presque tous les routers (`livre`, `emprunt`, `membre`, etc.).
-
-### 📖 Membre (Membre)
-*   **Rôle** : Utilisateur final (lecteur).
-*   **Pouvoirs** : 
-    *   Consulter le catalogue (livres, auteurs).
-    *   Voir **uniquement son propre historique** d'emprunts.
-*   **Restrictions** : Ne peut pas modifier la base de données ni voir les données des autres membres.
+Bienvenue dans la documentation officielle de votre plateforme de bibliothèque. Ce document explique simplement comment utiliser les fonctionnalités, qui peut faire quoi, et comment naviguer dans l'API.
 
 ---
 
-## 2. Le Cycle de Vie d'un Membre
+## 👥 1. Qui peut faire quoi ? (Rôles)
 
-Le processus d'accès pour un membre suit ces étapes précises :
+L'accès à l'API est protégé par trois niveaux de sécurité :
 
-### Étape 1 : Création par le Staff (Agent/Admin)
-Le membre ne peut pas s'inscrire tout seul. C'est un bibliothécaire qui remplit le formulaire :
-*   **Endpoint** : `POST /membres/`
-*   **Données requises** : Nom, prénom, email, numero_carte, **login** et **mot de passe**.
-*   **ID Type Membre** : Doit correspondre à un type existant (ex: 1 pour Étudiant).
-
-### Étape 2 : Identifiants
-Une fois le compte créé, le membre possède trois clés pour s'identifier (au choix) :
-1.  Son **Email**
-2.  Son **Login**
-3.  Son **Numéro de carte**
-
-### Étape 3 : Connexion (Login)
-Le membre utilise l'endpoint dédié à la plateforme publique :
-*   **Endpoint** : `POST /auth/login/member`
-*   **Retour** : Un jeton **JWT** (Token) qu'il devra fournir dans l'en-tête `Authorization: Bearer <token>` pour ses prochaines requêtes.
+| Rôle | Description | Actions Clés |
+| :--- | :--- | :--- |
+| **🛡️ Administrateur** | Le "Super-Patron" | Gérer le personnel (Bibliothécaires), configurer les règles globales. |
+| **📖 Agent (Staff)** | Le Gestionnaire | Inscrire des membres, enregistrer les prêts/retours, voir les statistiques. |
+| **👤 Membre** | L'Utilisateur final | Réserver des livres, prolonger ses prêts, laisser des avis, gérer ses favoris. |
 
 ---
 
-## 3. Détail des Routers et Fonctionnalités
+## 🚀 2. Guide de Démarrage Rapide
 
-### 🔑 Authentication (`/auth`)
-*   `POST /auth/login` : Connexion pour le Staff uniquement.
-*   `POST /auth/login/member` : Connexion pour les Membres uniquement.
+### 🔐 Connexion
+Pour utiliser l'API, vous devez d'abord obtenir un "Pass" (Token JWT) :
+- **Personnel** : `POST /auth/login` (utilisez login/mot de passe).
+- **Membres** : `POST /auth/login/member` (utilisez email/login/numéro de carte).
 
-### 👥 Membres (`/membres`)
-*   `POST /` : (Staff) Inscription d'un nouveau membre.
-*   `GET /` : (Staff) Liste de tous les membres.
-*   `PATCH /{id}/statut` : (Staff) Suspendre ou réactiver un compte.
-
-### 📚 Catalogue (`/livres`, `/auteurs`, `/categories`)
-*   `GET /` : (Public/Membre/Staff) Voir le catalogue.
-*   `POST`, `PUT`, `DELETE` : (Staff uniquement) Modifier le catalogue.
-
-### 📦 Emprunts (`/emprunts`)
-*   `POST /` : (Staff) Enregistrer un prêt quand le membre est au comptoir.
-*   `PUT /{id}/retour` : (Staff) Enregistrer le retour d'un livre.
-*   `GET /membre/{id_membre}` : (Membre ou Staff). Un membre ne peut voir que son propre ID ici. Si un membre tente de voir l'ID d'un autre, il recevra une erreur `403 Forbidden`.
-
-### 📅 Réservations et Sanctions
-*   Gestion réservée au **Staff** pour assurer l'intégrité des règles de la bibliothèque.
+### 🔍 Mon Profil
+Utilisez l'endpoint `GET /auth/me` pour voir instantanément vos informations et votre rôle une fois connecté.
 
 ---
 
-## 4. Comment tester avec Swagger (`/docs`)
+## 📖 3. Fonctionnalités pour les UTILISATEURS (Membres)
 
-1.  Lancez le serveur.
-2.  Allez sur `http://localhost:8000/docs`.
-3.  Cliquez sur le bouton **Authorize** en haut à droite.
-4.  Entrez les identifiants Admin/Agent pour débloquer les fonctions de gestion.
-5.  Pour tester en tant que membre, déconnectez-vous et utilisez les identifiants générés par `POST /auth/login/member`.
+### 📚 Explorer le Catalogue
+- **Recherche Avancée** : `GET /livres/` (Filtrez par titre ou catégorie).
+- **Disponibilité** : Le champ `nb_disponible` vous indique en temps réel s'il reste des exemplaires en stock.
+
+### 📅 Gérer ses Emprunts
+- **Réservation Libres** : `POST /reservations/`. Vous pouvez réserver un livre tout seul !
+- **Prolongation (Renewal)** : `PATCH /emprunts/{id}/prolonger`. Gagnez **7 jours de plus** sur votre prêt (si le livre n'est pas réservé par quelqu'un d'autre).
+
+### ⭐ Interaction et Favoris
+- **Avis** : `POST /avis/`. Donnez une note de 1 à 5 et laissez un commentaire sur vos lectures.
+- **Favoris** : `POST /favoris/`. Marquez des livres pour les retrouver plus tard.
+- **Notifications** : `GET /notifications/`. Restez informé de vos retours validés ou de vos éventuelles amendes.
+
+---
+
+## 🛡️ 4. Fonctionnalités pour le PERSONNEL (Staff/Admin)
+
+### 📦 Gestion des Flux
+- **Emprunts** : `POST /emprunts/`. Enregistrez un prêt au comptoir.
+- **Retours & Amendes** : `PUT /emprunts/{id}/retour`. Le système calcule **automatiquement** l'amende de retard (100 FCFA / jour) et crée une sanction si nécessaire.
+
+### 🗑️ Administration Sécurisée
+- **Suppression Membre** : Interdite si le membre a des emprunts en cours.
+- **Suppression Bibliothèque** : Réservée à l'Admin, interdite si le personnel est lié à des transactions historiques.
+
+### 📊 Tableau de Bord (Analytics)
+Accédez à `GET /stats/` pour voir :
+- Le **Top 5 des livres** les plus populaires.
+- La répartition des livres par **Catégorie**.
+- Les indicateurs globaux (retards, total membres, etc.).
+
+---
+
+## 🛠️ 5. Aide Technique (Swagger)
+
+1. Ouvrez votre navigateur sur : `https://bibliotheque-emprunts.onrender.com/docs`.
+2. Cliquez sur **"Authorize"** et entrez votre Token ou identifiants.
+3. Testez les endpoints directement avec le bouton **"Try it out"**.
+
+---
+> [!TIP]
+> **Une question ?** Regardez les messages d'erreur de l'API, ils sont conçus pour être explicites (ex: "Limite d'emprunts atteinte", "Livre déjà réservé").

@@ -65,3 +65,25 @@ def update_statut(id_membre: int, statut: str, db: Session = Depends(get_db), cu
     obj.statut_compte = statut
     db.commit()
     return {"message": f"Statut mis à jour: {statut}"}
+@router.delete("/{id_membre}")
+def delete(id_membre: int, db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
+    obj = db.get(Membre, id_membre)
+    if not obj:
+        raise HTTPException(404, "Membre introuvable")
+    
+    # Check for active loans
+    from models.models import Emprunt
+    active_loans = db.query(Emprunt).filter(
+        Emprunt.id_membre == id_membre,
+        Emprunt.statut.in_(["En cours", "Retard"])
+    ).count()
+    
+    if active_loans > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Impossible de supprimer le membre : il a {active_loans} emprunt(s) en cours ou en retard."
+        )
+    
+    db.delete(obj)
+    db.commit()
+    return {"message": "Membre supprimé avec succès"}

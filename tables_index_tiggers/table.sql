@@ -171,7 +171,7 @@ CREATE TABLE reservation (
     priorite INT NOT NULL CHECK (priorite > 0),
     id_membre INT NOT NULL,
     id_livre INT NOT NULL,
-    id_bibliotecaire INT NOT NULL,
+    id_bibliotecaire INT,
     CONSTRAINT fk_reservation_membre
         FOREIGN KEY (id_membre)
         REFERENCES membre(id_membre)
@@ -217,6 +217,43 @@ CREATE TABLE sanction (
         REFERENCES bibliothecaire(id_bibliotecaire)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
+);
+
+-- =========================
+-- TABLE: AVIS
+-- =========================
+CREATE TABLE avis (
+    id_avis SERIAL PRIMARY KEY,
+    note INT NOT NULL CHECK (note >= 1 AND note <= 5),
+    commentaire TEXT,
+    date_avis DATE NOT NULL DEFAULT CURRENT_DATE,
+    id_membre INT NOT NULL,
+    id_livre INT NOT NULL,
+    CONSTRAINT fk_avis_membre FOREIGN KEY (id_membre) REFERENCES membre(id_membre) ON DELETE CASCADE,
+    CONSTRAINT fk_avis_livre FOREIGN KEY (id_livre) REFERENCES livre(id_livre) ON DELETE CASCADE
+);
+
+-- =========================
+-- TABLE: FAVORIS
+-- =========================
+CREATE TABLE favoris (
+    id_membre INT NOT NULL,
+    id_livre INT NOT NULL,
+    PRIMARY KEY (id_membre, id_livre),
+    CONSTRAINT fk_favoris_membre FOREIGN KEY (id_membre) REFERENCES membre(id_membre) ON DELETE CASCADE,
+    CONSTRAINT fk_favoris_livre FOREIGN KEY (id_livre) REFERENCES livre(id_livre) ON DELETE CASCADE
+);
+
+-- =========================
+-- TABLE: NOTIFICATION
+-- =========================
+CREATE TABLE notification (
+    id_notification SERIAL PRIMARY KEY,
+    message TEXT NOT NULL,
+    date_notif TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lu BOOLEAN NOT NULL DEFAULT FALSE,
+    id_membre INT NOT NULL,
+    CONSTRAINT fk_notification_membre FOREIGN KEY (id_membre) REFERENCES membre(id_membre) ON DELETE CASCADE
 );
 
 COMMIT;

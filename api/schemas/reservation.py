@@ -2,12 +2,14 @@ from pydantic import ConfigDict, BaseModel
 from datetime import date
 
 
+from typing import Optional
+
 class ReservationCreate(BaseModel):
-    id_membre: int
+    id_membre: Optional[int] = None
     id_livre: int
-    id_bibliotecaire: int
-    priorite: int
-    statut: str
+    id_bibliotecaire: Optional[int] = None
+    priorite: int = 1
+    statut: Optional[str] = "En attente"
 
 
 class ReservationOut(BaseModel):
@@ -17,6 +19,6 @@ class ReservationOut(BaseModel):
     priorite: int
     id_membre: int
     id_livre: int
-    id_bibliotecaire: int
+    id_bibliotecaire: Optional[int]
 
     model_config = ConfigDict(from_attributes=True)

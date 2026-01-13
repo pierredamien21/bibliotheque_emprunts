@@ -79,3 +79,7 @@ htmlcov/
 # --- Local Project Specific ---
 .gemini/
 .antigravity/
+brain/
+*.bak
+*.tmp
+node_modules/

@@ -62,3 +62,29 @@ def update_role(id_bibliotecaire: int, role: str, db: Session = Depends(get_db),
     obj.role = role
     db.commit()
     return {"message": f"Rôle mis à jour: {role}"}
+@router.delete("/{id_bibliotecaire}")
+def delete(id_bibliotecaire: int, db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_admin)):
+    obj = db.get(Bibliothecaire, id_bibliotecaire)
+    if not obj:
+        raise HTTPException(404, "Bibliothécaire introuvable")
+    
+    # Prevent self-deletion
+    if obj.id_bibliotecaire == current_user.id_bibliotecaire:
+        raise HTTPException(status_code=400, detail="Vous ne pouvez pas supprimer votre propre compte.")
+    
+    # Check for links in emprunts, reservations or sanctions
+    from models.models import Emprunt, Reservation, Sanction
+    
+    has_emprunts = db.query(Emprunt).filter(Emprunt.id_bibliotecaire == id_bibliotecaire).first()
+    has_reservations = db.query(Reservation).filter(Reservation.id_bibliotecaire == id_bibliotecaire).first()
+    has_sanctions = db.query(Sanction).filter(Sanction.id_bibliotecaire == id_bibliotecaire).first()
+    
+    if has_emprunts or has_reservations or has_sanctions:
+        raise HTTPException(
+            status_code=400,
+            detail="Impossible de supprimer ce bibliothécaire car il est lié à des transactions (emprunts, réservations ou sanctions)."
+        )
+    
+    db.delete(obj)
+    db.commit()
+    return {"message": "Bibliothécaire supprimé avec succès"}

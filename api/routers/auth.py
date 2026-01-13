@@ -3,10 +3,33 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import get_db
 from models.models import Bibliothecaire, Membre
-from security import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import timedelta, date
+from security import (
+    verify_password, create_access_token, 
+    ACCESS_TOKEN_EXPIRE_MINUTES, get_current_user
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.get("/me")
+def get_me(current_user=Depends(get_current_user)):
+    """Get the current logged in user information."""
+    if isinstance(current_user, Membre):
+        return {
+            "id": current_user.id_membre,
+            "email": current_user.email,
+            "nom": current_user.nom,
+            "prenom": current_user.prenom,
+            "role": "Membre"
+        }
+    return {
+        "id": current_user.id_bibliotecaire,
+        "email": current_user.email,
+        "login": current_user.login,
+        "nom": current_user.nom,
+        "prenom": current_user.prenom,
+        "role": current_user.role
+    }
 
 
 @router.post("/login")

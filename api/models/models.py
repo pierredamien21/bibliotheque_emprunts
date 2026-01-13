@@ -1,6 +1,7 @@
 from sqlalchemy import (
-    Column, Integer, String, Date, ForeignKey, Text, Numeric
+    Column, Integer, String, Date, ForeignKey, Text, Numeric, Boolean, DateTime
 )
+from sqlalchemy.sql import func
 from database import Base
 from datetime import date
 
@@ -145,7 +146,7 @@ class Reservation(Base):
 
     id_membre = Column(Integer, ForeignKey("membre.id_membre"), nullable=False)
     id_livre = Column(Integer, ForeignKey("livre.id_livre"), nullable=False)
-    id_bibliotecaire = Column(Integer, ForeignKey("bibliothecaire.id_bibliotecaire"), nullable=False)
+    id_bibliotecaire = Column(Integer, ForeignKey("bibliothecaire.id_bibliotecaire"), nullable=True)
 
 
 # =========================
@@ -173,3 +174,42 @@ class LivreAuteur(Base):
 
     id_livre = Column(Integer, ForeignKey("livre.id_livre", ondelete="CASCADE"), primary_key=True)
     id_auteur = Column(Integer, ForeignKey("auteur.id_auteur", ondelete="CASCADE"), primary_key=True)
+
+
+# =========================
+# AVIS
+# =========================
+class Avis(Base):
+    __tablename__ = "avis"
+
+    id_avis = Column(Integer, primary_key=True, index=True)
+    note = Column(Integer, nullable=False)
+    commentaire = Column(Text)
+    date_avis = Column(Date, default=date.today)
+    
+    id_membre = Column(Integer, ForeignKey("membre.id_membre", ondelete="CASCADE"), nullable=False)
+    id_livre = Column(Integer, ForeignKey("livre.id_livre", ondelete="CASCADE"), nullable=False)
+
+
+# =========================
+# FAVORIS
+# =========================
+class Favoris(Base):
+    __tablename__ = "favoris"
+
+    id_membre = Column(Integer, ForeignKey("membre.id_membre", ondelete="CASCADE"), primary_key=True)
+    id_livre = Column(Integer, ForeignKey("livre.id_livre", ondelete="CASCADE"), primary_key=True)
+
+
+# =========================
+# NOTIFICATION
+# =========================
+class Notification(Base):
+    __tablename__ = "notification"
+
+    id_notification = Column(Integer, primary_key=True, index=True)
+    message = Column(Text, nullable=False)
+    date_notif = Column(DateTime, default=func.now())
+    lu = Column(Boolean, default=False)
+    
+    id_membre = Column(Integer, ForeignKey("membre.id_membre", ondelete="CASCADE"), nullable=False)
