@@ -83,3 +83,5 @@ brain/
 *.bak
 *.tmp
 node_modules/
+api/static/covers/*
+!api/static/covers/.gitkeep

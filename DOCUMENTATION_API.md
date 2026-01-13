@@ -1,4 +1,4 @@
-# 📚 Documentation API - Système de Gestion de Bibliothèque (V2)
+# 📚 Documentation API - Système de Gestion de Bibliothèque (V3)
 
 Bienvenue dans la documentation officielle de votre plateforme de bibliothèque. Ce document explique simplement comment utiliser les fonctionnalités, qui peut faire quoi, et comment naviguer dans l'API.
 
@@ -34,7 +34,8 @@ Utilisez l'endpoint `GET /auth/me` pour voir instantanément vos informations et
 - **Recherche Avancée** : `GET /livres/` (Filtrez par titre ou catégorie).
 - **Disponibilité** : Le champ `nb_disponible` vous indique en temps réel s'il reste des exemplaires en stock.
 
-### 📅 Gérer ses Emprunts
+### 📅 Gérer ses Emprunts & Suggestions
+- **Recommandations IA** : `GET /livres/recommandations`. L'algorithme analyse vos thèmes préférés et vous suggère des livres que vous n'avez pas encore lus.
 - **Réservation Libres** : `POST /reservations/`. Vous pouvez réserver un livre tout seul !
 - **Prolongation (Renewal)** : `PATCH /emprunts/{id}/prolonger`. Gagnez **7 jours de plus** sur votre prêt (si le livre n'est pas réservé par quelqu'un d'autre).
 
@@ -42,6 +43,10 @@ Utilisez l'endpoint `GET /auth/me` pour voir instantanément vos informations et
 - **Avis** : `POST /avis/`. Donnez une note de 1 à 5 et laissez un commentaire sur vos lectures.
 - **Favoris** : `POST /favoris/`. Marquez des livres pour les retrouver plus tard.
 - **Notifications** : `GET /notifications/`. Restez informé de vos retours validés ou de vos éventuelles amendes.
+
+### 📨 Communication
+- **Messagerie Interne** : `POST /messages/`. Posez une question au staff de la bibliothèque (ex: disponibilité, aide, plainte).
+- **Mes Messages** : `GET /messages/`. Suivez les réponses du personnel à vos questions.
 
 ---
 
@@ -53,6 +58,10 @@ Utilisez l'endpoint `GET /auth/me` pour voir instantanément vos informations et
 ### 📦 Gestion des Flux
 - **Emprunts** : `POST /emprunts/`. Enregistrez un prêt au comptoir.
 - **Retours & Amendes** : `PUT /emprunts/{id}/retour`. Le système calcule **automatiquement** l'amende de retard (100 FCFA / jour) et crée une sanction si nécessaire.
+
+### 📨 Service Client (Staff)
+- **Répondre aux Membres** : `PATCH /messages/{id_message}/repondre`. Communiquez directement avec vos lecteurs.
+- **Suivi Questions** : `GET /messages/`. Affiche toutes les questions en attente de réponse des membres.
 
 ### 🗑️ Administration Sécurisée
 - **Suppression Membre** : Interdite si le membre a des emprunts en cours.

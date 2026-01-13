@@ -1,9 +1,10 @@
 from sqlalchemy import (
-    Column, Integer, String, Date, ForeignKey, Text, Numeric, Boolean, DateTime
+    Column, Integer, String, Date, ForeignKey, Text, Numeric, Boolean, DateTime, Table
 )
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
-from datetime import date
+from datetime import date, datetime
 
 
 # =========================
@@ -214,3 +215,19 @@ class Notification(Base):
     lu = Column(Boolean, default=False)
     
     id_membre = Column(Integer, ForeignKey("membre.id_membre", ondelete="CASCADE"), nullable=False)
+
+
+# =========================
+# MESSAGE (V3)
+# =========================
+class Message(Base):
+    __tablename__ = "message"
+
+    id_message = Column(Integer, primary_key=True, index=True)
+    id_membre = Column(Integer, ForeignKey("membre.id_membre", ondelete="CASCADE"), nullable=False)
+    id_bibliotecaire = Column(Integer, ForeignKey("bibliothecaire.id_bibliotecaire"))
+    contenu = Column(Text, nullable=False)
+    reponse = Column(Text)
+    date_envoi = Column(DateTime, default=datetime.utcnow)
+    date_reponse = Column(DateTime)
+    statut = Column(String(20), default="Envoye")

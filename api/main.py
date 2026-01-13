@@ -21,6 +21,7 @@ from routers.notification import router as notification_router
 from routers.avis import router as avis_router
 from routers.favoris import router as favoris_router
 from routers.upload import router as upload_router
+from routers.message import router as message_router
 
 app = FastAPI(
     title="API Gestion Bibliothèque",
@@ -63,6 +64,7 @@ app.include_router(notification_router)
 app.include_router(avis_router)
 app.include_router(favoris_router)
 app.include_router(upload_router)
+app.include_router(message_router)
 
 # =========================
 # ROOT
