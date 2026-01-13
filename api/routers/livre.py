@@ -64,7 +64,8 @@ def get_recommendations(db: Session = Depends(get_db), current_user = Depends(ge
 
     # 1. Trouver les catégories préférées (Top 3) via les emprunts
     pref_categories = db.query(Livre.id_categorie, func.count(Emprunt.id_emprunt).label("cnt"))\
-        .join(Emprunt, Emprunt.id_exemplaire == Livre.id_livre)\
+        .join(Exemplaire, Exemplaire.id_livre == Livre.id_livre)\
+        .join(Emprunt, Emprunt.id_exemplaire == Exemplaire.id_exemplaire)\
         .filter(Emprunt.id_membre == current_user.id_membre)\
         .group_by(Livre.id_categorie)\
         .order_by(desc("cnt"))\

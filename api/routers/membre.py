@@ -21,7 +21,11 @@ def get_one(id_membre: int, db: Session = Depends(get_db), current_user: Bibliot
         raise HTTPException(404, "Membre introuvable")
     return obj
 
-
+@router.post("/", response_model=MembreOut)
+def create(data: MembreCreate, db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
+    data_dict = data.model_dump()
+    password = data_dict.pop("password")
+    
     from sqlalchemy.exc import IntegrityError
     try:
         obj = Membre(**data_dict)
