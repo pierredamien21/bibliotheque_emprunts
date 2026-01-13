@@ -3,10 +3,18 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.models import Sanction
 from schemas.sanction import SanctionCreate, SanctionOut
-from security import get_current_staff
-from models.models import Bibliothecaire
+from security import get_current_staff, get_current_user
+from models.models import Bibliothecaire, Membre
 
 router = APIRouter(prefix="/sanctions", tags=["Sanctions"])
+
+
+@router.get("/mes-sanctions", response_model=list[SanctionOut])
+def get_mes_sanctions(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    if not isinstance(current_user, Membre):
+        from fastapi import HTTPException
+        raise HTTPException(403, "Seuls les membres peuvent accéder à leurs sanctions via ce raccourci.")
+    return db.query(Sanction).filter(Sanction.id_membre == current_user.id_membre).all()
 
 
 @router.get("/", response_model=list[SanctionOut])

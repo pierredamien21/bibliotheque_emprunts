@@ -11,6 +11,13 @@ from models.models import Bibliothecaire, Membre
 router = APIRouter(prefix="/emprunts", tags=["Emprunts"])
 
 
+@router.get("/mes-emprunts", response_model=list[EmpruntOut])
+def get_mes_emprunts(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    if not isinstance(current_user, Membre):
+        raise HTTPException(403, "Seuls les membres peuvent accéder à leurs emprunts via ce raccourci.")
+    return db.query(Emprunt).filter(Emprunt.id_membre == current_user.id_membre).all()
+
+
 @router.get("/", response_model=list[EmpruntOut])
 def get_all(db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
     return db.query(Emprunt).all()
@@ -153,6 +160,9 @@ def get_one(id_emprunt: int, db: Session = Depends(get_db), current_user: Biblio
     if not obj:
         raise HTTPException(404, "Emprunt introuvable")
     return obj
+
+
+
 
 
 @router.get("/membre/{id_membre}", response_model=list[EmpruntOut])

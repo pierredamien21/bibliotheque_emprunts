@@ -9,6 +9,14 @@ from models.models import Bibliothecaire, Membre
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
 
+@router.get("/mes-reservations", response_model=list[ReservationOut])
+def get_mes_reservations(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    from fastapi import HTTPException
+    if not isinstance(current_user, Membre):
+        raise HTTPException(403, "Seuls les membres peuvent accéder à leurs réservations via ce raccourci.")
+    return db.query(Reservation).filter(Reservation.id_membre == current_user.id_membre).all()
+
+
 @router.get("/", response_model=list[ReservationOut])
 def get_all(db: Session = Depends(get_db), current_user: Bibliothecaire = Depends(get_current_staff)):
     return db.query(Reservation).all()
@@ -37,6 +45,9 @@ def create(data: ReservationCreate, db: Session = Depends(get_db), current_user 
     db.commit()
     db.refresh(obj)
     return obj
+
+
+
 
 
 @router.get("/{id_reservation}", response_model=ReservationOut)
