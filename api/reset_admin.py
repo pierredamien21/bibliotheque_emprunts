@@ -26,9 +26,9 @@ def reset_admin():
             )
             db.add(admin)
         
-        admin.mot_de_passe_hash = hash_password("admin123")
+        admin.mot_de_passe_hash = hash_password(os.environ["ADMIN_PASSWORD"])
         db.commit()
-        print("Mot de passe de l'administrateur 'admin' réinitialisé à : admin123")
+        print("Mot de passe de l'administrateur 'admin' réinitialisé (valeur de ADMIN_PASSWORD)")
         print("URL DB utilisée :", os.getenv("DATABASE_URL").split("@")[-1])
     finally:
         db.close()

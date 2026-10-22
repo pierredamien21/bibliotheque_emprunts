@@ -1,3 +1,4 @@
+import os
 import httpx
 import sys
 import time
@@ -5,7 +6,7 @@ import random
 
 BASE_URL = "https://bibliotheque-emprunts.onrender.com"
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
 
 def log(msg, status="INFO"):
     print(f"[{status}] {msg}")

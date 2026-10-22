@@ -24,7 +24,7 @@ def seed_admin():
             prenom="System",
             email="admin@bibliotheque.com",
             login="admin",
-            mot_de_passe_hash=hash_password("admin123"),
+            mot_de_passe_hash=hash_password(os.environ["ADMIN_PASSWORD"]),
             role="Admin"
         )
         
@@ -32,7 +32,7 @@ def seed_admin():
         db.commit()
         print("Premier administrateur créé avec succès !")
         print("Login : admin")
-        print("Mot de passe : admin123")
+        print("Mot de passe : celui de la variable ADMIN_PASSWORD")
         print("IMPORTANT : Changez ce mot de passe dès votre première connexion.")
         
     except Exception as e:
